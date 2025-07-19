@@ -1,1 +1,37 @@
+Business Requirement Document (BRD)
+Project Title: Credit Risk Data Migration
+Date: July 19, 2025
+Prepared by: Bharath Raj
+
+Introduction
+
+This document outlines requirements for migrating credit risk data to comply with Basel III and CRR regulations.
+
+Business Objectives
+
+Migrate risk data (PD, LGD, RWA, EAD) accurately.
+Ensure compliance with Basel III and CRR.
+Support regulatory reporting.
+
+Scope
+
+Data Sources: Legacy credit risk system.
+Target System: Modern data warehouse.
+Data Elements: Customer ID, Loan ID, Loan Amount, EAD, PD, LGD, RWA, Date of Record.
+
+Business Rules
+
+EAD = Loan Amount.
+RWA calculated using IRB approach.
+Validate and reconcile all records.
+
+Validation Procedures
+
+Profile data for NULLs and outliers.
+Reconcile legacy and target systems.
+Validate CDEs: EAD, PD, LGD, RWA.
+
+UAT Plan
+
+Execute test cases to verify data accuracy.
 
