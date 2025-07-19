@@ -1,5 +1,7 @@
 Credit Risk Data Simulation Script
+
 This data simulation script generates two CSV files: 'Legacy credit risk data' and 'Target data warehouse'. These files contain simulated data that can be used to practice credit risk analysis, a common task performed by data analysts in companies like Deloitte. By using this script, you can generate realistic data to test and improve your credit risk analysis skills.
+
 Purpose
 The script is designed to help data analysts and professionals practice credit risk analysis by providing synthetic datasets that mimic real-world scenarios. It simulates the migration of credit risk data from a legacy system to a modern data warehouse, incorporating common data quality issues such as NULL values and incorrect calculations.
 Usage
