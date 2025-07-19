@@ -1,1 +1,111 @@
+--  Data Profiling
+
+-- Profile both datasets to identify NULL values, data types, and outliers.
+
+-- NULL counts in legacy system
+SELECT 
+    SUM(CASE WHEN Customer_ID IS NULL THEN 1 ELSE 0 END) AS null_customer_id,
+    SUM(CASE WHEN Loan_ID IS NULL THEN 1 ELSE 0 END) AS null_loan_id,
+    SUM(CASE WHEN Loan_Amount IS NULL THEN 1–
+
+ ELSE 0 END) AS null_loan_amount,
+    SUM(CASE WHEN EAD IS NULL THEN 1 ELSE 0 END) AS null_ead,
+    SUM(CASE WHEN PD IS NULL THEN 1 ELSE 0 END) AS null_pd,
+    SUM(CASE WHEN LGD IS NULL THEN 1 ELSE 0 END) AS null_lgd,
+    SUM(CASE WHEN RWA IS NULL THEN 1 ELSE 0 END) AS null_rwa,
+    SUM(CASE WHEN Date_of_Record IS NULL THEN 1 ELSE 0 END) AS null_date
+FROM legacy_credit_risk_data;
+
+-- NULL counts in target system
+SELECT 
+    SUM(CASE WHEN Customer_ID IS NULL THEN 1 ELSE 0 END) AS null_customer_id,
+    SUM(CASE WHEN Loan_ID IS NULL THEN 1 ELSE 0 END) AS null_loan_id,
+    SUM(CASE WHEN Loan_Amount IS NULL THEN 1 ELSE 0 END) AS null_loan_amount,
+    SUM(CASE WHEN EAD IS NULL THEN 1 ELSE 0 END) AS null_ead,
+    SUM(CASE WHEN PD IS NULL THEN 1 ELSE 0 END) AS null_pd,
+    SUM(CASE WHEN LGD IS NULL THEN 1 ELSE 0 END) AS null_lgd,
+    SUM(CASE WHEN RWA IS NULL THEN 1 ELSE 0 END) AS null_rwa,
+    SUM(CASE WHEN Date_of_Record IS NULL THEN 1 ELSE 0 END) AS null_date
+FROM target_data_warehouse;
+
+-- Check min and max values for outliers
+SELECT 
+    MIN(Loan_Amount) AS min_loan_amount, MAX(Loan_Amount) AS max_loan_amount,
+    MIN(EAD) AS min_ead, MAX(EAD) AS max_ead,
+    MIN(PD) AS min_pd, MAX(PD) AS max_pd,
+    MIN(LGD) AS min_lgd, MAX(LGD) AS max_lgd,
+    MIN(RWA) AS min_rwa, MAX(RWA) AS max_rwa
+FROM legacy_credit_risk_data;
+
+-- Similarly for target_data_warehouse, execute all the above queries
+
+-- Data Reconciliation
+
+-- Compare records between the legacy and target systems to identify discrepancies in EAD, PD, LGD, and RWA
+
+SELECT 
+    l.Loan_ID,
+    l.EAD AS legacy_EAD,
+    t.EAD AS target_EAD,
+    l.PD AS legacy_PD,
+    t.PD AS target_PD,
+    l.LGD AS legacy_LGD,
+    t.LGD AS target_LGD,
+    l.RWA AS legacy_RWA,
+    t.RWA AS target_RWA
+FROM legacy_credit_risk_data l
+JOIN target_data_warehouse t ON l.Loan_ID = t.Loan_ID
+WHERE 
+    ABS(l.EAD - t.EAD) > 0.01 OR
+    ABS(l.PD - t.PD) > 0.001 OR
+    ABS(l.LGD - t.LGD) > 0.001 OR
+    ABS(l.RWA - t.RWA) > 0.01;
+
+
+-- Validate Critical Data Elements (CDEs)
+
+-- Validate EAD, PD, LGD, and RWA. For RWA, ensure it matches the IRB formula: RWA = 12.5 * K * EAD, where K is calculated as:
+
+\![ K = LGD \cdot N\left[\sqrt{\frac{1}{1-R}} \cdot G(PD) + \sqrt{\frac{R}{1-R}} \cdot G(0.999)\right] \cdot \frac{1}{1-1.5b} ]
+Where:
+( R = 0.12 \cdot \frac{1 - e^{-50 \cdot PD}}{1 - e^{-50}} + 0.24 \cdot \left(1 - \frac{1 - e^{-50 \cdot PD}}{1 - e^{-50}}\right) )
+( b = (0.08451 - 0.05898 \cdot \ln(PD))^2 )
+( N ) is the cumulative normal distribution, ( G ) is the inverse normal distribution.!\
+
+-- Since implementing this formula in SQL is complex, sample records and verify calculations externally using the Python function provided
+
+SELECT Loan_ID, EAD, PD, LGD, RWA
+FROM target_data_warehouse
+WHERE Loan_ID IN (SELECT Loan_ID FROM target_data_warehouse ORDER BY RANDOM() LIMIT 100);
+
+-- Investigate Anomalies
+
+-- Identify and justify anomalies, such as NULL values or incorrect RWA calculations
+
+SELECT 
+    Loan_ID,
+    EAD,
+    PD,
+    LGD,
+    RWA
+FROM legacy_credit_risk_data
+WHERE PD IS NULL OR LGD IS NULL OR EAD < 0 OR PD < 0 OR LGD < 0 OR RWA < 0;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
