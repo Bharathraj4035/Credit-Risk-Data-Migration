@@ -18,4 +18,4 @@ Provides a hands-on way to practice credit risk analysis.
 Helps in understanding data migration challenges and solutions.
 Enhances skills in data validation and regulatory compliance.
 
-For more information on credit risk analysis, refer to resources like Credit Risk Modelling Guide.
+
