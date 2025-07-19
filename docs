@@ -35,3 +35,11 @@ UAT Plan
 
 Execute test cases to verify data accuracy.
 
+Test Case;
+
+ID           Description            Query                                                                     Expected Outcome
+
+TC1         Loans with PD = 0       SELECT * FROM target_data_warehouse WHERE PD = 0                          RWA = 0
+
+TC2         Negative values         SELECT * FROM target_data_warehouse WHERE EAD < 0 OR PD < 0 OR LGD < 0    No records
+ 
