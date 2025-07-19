@@ -1,0 +1,77 @@
+import pandas as pd
+import numpy as np
+from scipy.stats import norm
+from datetime import datetime, timedelta
+
+def calculate_K(PD, LGD, M=2.5):
+    if PD <= 0 or PD >= 1:
+        return 0 if PD == 0 else LGD
+    R = 0.12 * (1 - np.exp(-50 * PD)) / (1 - np.exp(-50)) + 0.24 * (1 - (1 - np.exp(-50 * PD)) / (1 - np.exp(-50)))
+    b = (0.08451 - 0.05898 * np.log(PD)) ** 2
+    term1 = (1 - R) ** -0.5 * norm.ppf(PD)
+    term2 = (R / (1 - R)) ** 0.5 * norm.ppf(0.999)
+    K = LGD * norm.cdf(term1 + term2) / (1 - 1.5 * b)
+    return K
+
+# Set random seed for reproducibility
+np.random.seed(42)
+
+# Generate data
+num_customers = 1000
+max_loans_per_customer = 10
+loans_per_customer = np.random.randint(1, max_loans_per_customer + 1, size=num_customers)
+total_loans = sum(loans_per_customer)
+
+customer_ids = np.repeat(np.arange(1, num_customers + 1), loans_per_customer)
+loan_ids = np.arange(1, total_loans + 1)
+
+loan_amounts = np.random.uniform(1000, 1000000, size=total_loans)
+
+start_date = datetime(2020, 1, 1)
+end_date = datetime(2025, 7, 19)
+date_range = (end_date - start_date).days
+dates = [start_date + timedelta(days=np.random.randint(0, date_range)) for _ in range(total_loans)]
+dates = [d.strftime('%Y-%m-%d') for d in dates]
+
+PDs = np.random.uniform(0, 0.1, size=total_loans)
+LGDs = np.random.uniform(0, 1, size=total_loans)
+
+EADs = loan_amounts.copy()
+
+Ks = [calculate_K(PD, LGD) for PD, LGD in zip(PDs, LGDs)]
+RWAs_target = [12.5 * K * EAD for K, EAD in zip(Ks, EADs)]
+
+# Create target dataframe
+target_df = pd.DataFrame({
+    'Customer_ID': customer_ids,
+    'Loan_ID': loan_ids,
+    'Loan_Amount': loan_amounts,
+    'EAD': EADs,
+    'PD': PDs,
+    'LGD': LGDs,
+    'RWA': RWAs_target,
+    'Date_of_Record': dates
+})
+
+# Create legacy dataframe with discrepancies
+legacy_df = target_df.copy()
+
+# Introduce NULLs in PD (10% of records)
+null_PD_indices = np.random.choice(total_loans, size=int(0.1 * total_loans), replace=False)
+legacy_df.loc[null_PD_indices, 'PD'] = np.nan
+
+# Introduce NULLs in LGD (10% of records)
+null_LGD_indices = np.random.choice(total_loans, size=int(0.1 * total_loans), replace=False)
+legacy_df.loc[null_LGD_indices, 'LGD'] = np.nan
+
+# Introduce wrong EAD (5% of records)
+wrong_EAD_indices = np.random.choice(total_loans, size=int(0.05 * total_loans), replace=False)
+legacy_df.loc[wrong_EAD_indices, 'EAD'] = legacy_df.loc[wrong_EAD_indices, 'Loan_Amount'] * 0.9
+
+# Introduce wrong RWA (20% of records)
+wrong_RWA_indices = np.random.choice(total_loans, size=int(0.2 * total_loans), replace=False)
+legacy_df.loc[wrong_RWA_indices, 'RWA'] = legacy_df.loc[wrong_RWA_indices, 'EAD'] * legacy_df.loc[wrong_RWA_indices, 'PD'] * 10
+
+# Save to CSV
+target_df.to_csv('target_data_warehouse.csv', index=False)
+legacy_df.to_csv('legacy_credit_risk_data.csv', index=False)
